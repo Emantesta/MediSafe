@@ -4,7 +4,14 @@ const tf = require('@tensorflow/tfjs-node');
 const { create } = require('ipfs-http-client');
 const router = express.Router();
 
-const ipfs = create({ host: 'ipfs.infura.io', port: 5001, protocol: 'https' });
+const ipfs = create({
+  host: process.env.IPFS_HOST,
+  port: process.env.IPFS_PORT,
+  protocol: process.env.IPFS_PROTOCOL,
+  headers: {
+    authorization: 'Basic ' + Buffer.from(`${process.env.INFURA_PROJECT_ID}:${process.env.INFURA_PROJECT_SECRET}`).toString('base64')
+  }
+});
 
 const authMiddleware = async (req, res, next) => {
   try {
