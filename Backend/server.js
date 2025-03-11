@@ -100,6 +100,10 @@ wss.on('connection', (ws) => {
       logger.error('WebSocket error:', error);
     }
   });
+  // Notify on UserOp status change
+  const notifyUpdate = (userOp) => wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userOpUpdate', data: userOp })));
+  // Call notifyUpdate in submitUserOperation after status changes
+});
   // server.js
 wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userUpdate', data: { address, verificationStatus: 'verified' } })));
   
