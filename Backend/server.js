@@ -98,6 +98,11 @@ wss.on('connection', (ws) => {
       logger.error('WebSocket error:', error);
     }
   });
+  // Send alerts
+  if (parseFloat(paymasterBalance) < 0.1) {
+    wss.clients.forEach(client => client.send(JSON.stringify({ type: 'alert', data: 'Low paymaster balance' })));
+  }
+});
   server.listen(process.env.PORT || 8080, () => logger.info(`Server running on port ${process.env.PORT || 8080}`));
 });
 
