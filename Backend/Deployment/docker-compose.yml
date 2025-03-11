@@ -1,14 +1,37 @@
 version: '3.8'
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "${PORT:-8080}:8080"  # Use PORT from .env or default to 8080
     environment:
       - NODE_ENV=production
+      - PORT=${PORT:-8080}
+      - SSL_CERT_PATH=${SSL_CERT_PATH}
+      - SSL_KEY_PATH=${SSL_KEY_PATH}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - JWT_SECRET=${JWT_SECRET}
       - MONGO_URI=mongodb://mongo:27017/telemedicine
+      - SONIC_RPC_URL=${SONIC_RPC_URL}
+      - PRIVATE_KEY=${PRIVATE_KEY}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS}
+      - PAYMASTER_ADDRESS=${PAYMASTER_ADDRESS}
+      - ENTRYPOINT_ADDRESS=${ENTRYPOINT_ADDRESS}
+      - IPFS_HOST=${IPFS_HOST}
+      - IPFS_PORT=${IPFS_PORT}
+      - IPFS_PROTOCOL=${IPFS_PROTOCOL}
+      - INFURA_PROJECT_ID=${INFURA_PROJECT_ID}
+      - INFURA_PROJECT_SECRET=${INFURA_PROJECT_SECRET}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+      - MAX_CONCURRENT_USEROPS=${MAX_CONCURRENT_USEROPS}
     volumes:
-      - ./:/app
+      - ./:/app  # Mount for development; remove in production if not needed
     depends_on:
       - mongo
     command: npm start
@@ -19,6 +42,8 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=telemedicine
 
 volumes:
   mongo-data:
