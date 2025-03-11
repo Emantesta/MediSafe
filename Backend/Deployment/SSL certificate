@@ -1,0 +1,5 @@
+volumes:
+  - /path/to/certs:/certs
+environment:
+  - SSL_CERT_PATH=/certs/cert.pem
+  - SSL_KEY_PATH=/certs/key.pem
