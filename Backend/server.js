@@ -25,18 +25,18 @@ const logger = winston.createLogger({
   ]
 });
 
+const config = require('./config');
 // Express App
-const app = express();
 const server = https.createServer({
-  cert: fs.readFileSync(process.env.SSL_CERT_PATH),
-  key: fs.readFileSync(process.env.SSL_KEY_PATH),
+  cert: fs.readFileSync(config.server.sslCertPath),
+  key: fs.readFileSync(config.server.sslKeyPath),
 });
-const wss = new WebSocket.Server({ server });
-
-// Ethereum Setup
-const provider = new ethers.providers.JsonRpcProvider(process.env.SONIC_RPC_URL);
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, [
+app.use(cors({ origin: config.server.allowedOrigins }));
+mongoose.connect(config.mongo.uri, { useNewUrlParser: true, useUnifiedTopology: true });
+// Ethereum setup
+const provider = new ethers.providers.JsonRpcProvider(config.blockchain.rpcUrl);
+const wallet = new ethers.Wallet(config.blockchain.privateKey, provider);
+const contract = new ethers.Contract(config.blockchain.contractAddress, [/* ABI */], wallet);
   'function registerPatient(string)',
   'function verifyDoctor(address, string, uint256)',
   'function verifyLabTechnician(address, string)',
