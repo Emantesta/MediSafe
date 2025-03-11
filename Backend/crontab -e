@@ -1,0 +1,1 @@
+*/5 * * * * /path/to/monitor.sh >> /path/to/monitor.log 2>&1
