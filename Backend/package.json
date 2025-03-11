@@ -11,6 +11,7 @@
     "build": "echo 'No build step required'"
   },
   "dependencies": {
+    "redis": "^4.6.5",
     "@account-abstraction/contracts": "^0.5.0",
     "@account-abstraction/utils": "^0.5.0",
     "@tensorflow/tfjs-node": "^4.0.0",
