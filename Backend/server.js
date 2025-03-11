@@ -94,6 +94,7 @@ wss.on('connection', (ws) => {
       logger.error('WebSocket error:', error);
     }
   });
+  server.listen(process.env.PORT || 8080, () => logger.info(`Server running on port ${process.env.PORT || 8080}`));
 });
 
 // Start Server
