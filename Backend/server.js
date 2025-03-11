@@ -7,6 +7,12 @@ const mongoose = require('mongoose');
 const winston = require('winston');
 const cors = require('cors');
 const { ethers } = require('ethers');
+const redis = require('redis');
+const redisClient = redis.createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
+});
+redisClient.on('error', (err) => logger.error('Redis Client Error', err));
+redisClient.connect().then(() => logger.info('Connected to Redis'));
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -85,7 +91,7 @@ app.use('/patient', patientRoutes(wallet, contract, wss, logger));
 app.use('/doctor', doctorRoutes(wallet, contract, logger));
 app.use('/lab', labRoutes(wallet, contract, logger));
 app.use('/pharmacy', pharmacyRoutes(wallet, contract, logger));
-app.use('/admin', require('./routes/admin')(wallet, contract, provider, logger));
+app.use('/admin', require('./routes/admin')(wallet, contract, provider, logger, redisClient));
 
 // WebSocket Handling
 wss.on('connection', (ws) => {
