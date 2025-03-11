@@ -1,0 +1,94 @@
+// routes/admin.js
+const express = require('express');
+const router = express.Router();
+const UserOp = require('../models/UserOp');
+const { authMiddleware, submitUserOperation } = require('./utils');
+
+router.get('/userops', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+
+  const { page = 1, limit = 10, status, search } = req.query;
+  const query = {};
+  if (status) query.status = status;
+  if (search) {
+    query.$or = [
+      { txHash: { $regex: search, $options: 'i' } },
+      { sender: { $regex: search, $options: 'i' } },
+    ];
+  }
+
+  try {
+    const userOps = await UserOp.find(query)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 });
+    const total = await UserOp.countDocuments(query);
+
+    res.json({ userOps, total });
+  } catch (error) {
+    logger.error('UserOps fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch UserOps' });
+  }
+});
+
+// Action: Retry Failed UserOp
+router.post('/userops/:id/retry', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+  const { id } = req.params;
+
+  try {
+    const userOp = await UserOp.findById(id);
+    if (!userOp || userOp.status !== 'failed') return res.status(400).json({ error: 'Invalid UserOp or not failed' });
+
+    const txHash = await submitUserOperation(userOp.toObject(), contract, provider, logger);
+    await new AuditLog({
+      adminAddress: req.user.address,
+      action: 'retry_userop',
+      details: `Retried UserOp ${id}, new txHash: ${txHash}`,
+    }).save();
+
+    res.json({ txHash });
+  } catch (error) {
+    logger.error('Retry UserOp error:', error);
+    res.status(500).json({ error: 'Retry failed' });
+  }
+});
+
+// Action: Mark as Resolved
+router.post('/userops/:id/resolve', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+  const { id } = req.params;
+
+  try {
+    const userOp = await UserOp.findByIdAndUpdate(id, { status: 'resolved' }, { new: true });
+    if (!userOp) return res.status(404).json({ error: 'UserOp not found' });
+
+    await new AuditLog({
+      adminAddress: req.user.address,
+      action: 'resolve_userop',
+      details: `Marked UserOp ${id} as resolved`,
+    }).save();
+
+    res.json({ message: 'UserOp marked as resolved', userOp });
+  } catch (error) {
+    logger.error('Resolve UserOp error:', error);
+    res.status(500).json({ error: 'Resolve failed' });
+  }
+});
+
+// Enhanced /userop-status/:txHash
+router.get('/userop-status/:txHash', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+  const { txHash } = req.params;
+
+  try {
+    const userOp = await UserOp.findOne({ txHash });
+    if (!userOp) return res.status(404).json({ error: 'UserOp not found' });
+    res.json({ status: userOp.status, userOp });
+  } catch (error) {
+    logger.error('UserOp status error:', error);
+    res.status(500).json({ error: 'Status check failed' });
+  }
+});
+
+module.exports = router;
