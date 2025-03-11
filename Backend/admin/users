@@ -1,0 +1,77 @@
+const User = require('../models/User');
+
+router.get('/users', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+
+  const { page = 1, limit = 10, role, status } = req.query;
+  const query = {};
+  if (role) query.role = role;
+  if (status) query.verificationStatus = status;
+
+  try {
+    const users = await User.find(query)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .sort({ registrationDate: -1 });
+
+    const total = await User.countDocuments(query);
+
+    // Enrich with blockchain data
+    const enrichedUsers = await Promise.all(users.map(async (user) => {
+      const nonce = await contract.nonces(user.address);
+      const dataStatus = await contract.getPatientDataStatus(user.address).catch(() => [0, 0]); // Default if not patient
+      return {
+        address: user.address,
+        role: user.role,
+        registrationDate: user.registrationDate,
+        verificationStatus: user.verificationStatus,
+        lastActivity: user.lastActivity || null,
+        nonce: nonce.toString(),
+        dataMonetization: user.role === 'patient' ? dataStatus[0] === 1 : null,
+      };
+    }));
+
+    res.json({ users: enrichedUsers, total });
+  } catch (error) {
+    logger.error('User list fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Action: Verify User
+router.post('/users/verify', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+  const { address, role, verificationData } = req.body;
+
+  try {
+    let callData;
+    if (role === 'doctor') callData = contract.interface.encodeFunctionData('verifyDoctor', [address, verificationData, 0]); // Add expiry if needed
+    else if (role === 'lab') callData = contract.interface.encodeFunctionData('verifyLabTechnician', [address, verificationData]);
+    else if (role === 'pharmacy') callData = contract.interface.encodeFunctionData('registerPharmacy', [address, verificationData]);
+    else return res.status(400).json({ error: 'Invalid role' });
+
+    const userOp = await createUserOperation(req.user.address, callData, wallet, contract);
+    const txHash = await submitUserOperation(userOp);
+    await User.updateOne({ address }, { verificationStatus: 'verified' });
+    await new AuditLog({ adminAddress: req.user.address, action: `verify_${role}`, details: `Verified ${address}` }).save();
+    res.json({ txHash });
+  } catch (error) {
+    logger.error('User verification error:', error);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+// Action: Deactivate User
+router.post('/users/deactivate', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+  const { address } = req.body;
+
+  try {
+    await User.updateOne({ address }, { verificationStatus: 'deactivated' });
+    await new AuditLog({ adminAddress: req.user.address, action: 'deactivate_user', details: `Deactivated ${address}` }).save();
+    res.json({ message: 'User deactivated' });
+  } catch (error) {
+    logger.error('User deactivation error:', error);
+    res.status(500).json({ error: 'Deactivation failed' });
+  }
+});
