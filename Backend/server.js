@@ -68,6 +68,9 @@ const contract = new ethers.Contract(config.blockchain.contractAddress, [/* ABI 
 // Middleware
 app.use(cors({ origin: process.env.FRONTEND_URL }));
 app.use(express.json());
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
