@@ -83,6 +83,7 @@ app.use('/patient', patientRoutes(wallet, contract, wss, logger));
 app.use('/doctor', doctorRoutes(wallet, contract, logger));
 app.use('/lab', labRoutes(wallet, contract, logger));
 app.use('/pharmacy', pharmacyRoutes(wallet, contract, logger));
+app.use('/admin', require('./routes/admin')(wallet, contract, provider, logger));
 
 // WebSocket Handling
 wss.on('connection', (ws) => {
