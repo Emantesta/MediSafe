@@ -1,0 +1,73 @@
+const express = require('express');
+const router = express.Router();
+const EventLog = require('../models/EventLog');
+const { ethers } = require('ethers');
+const { authMiddleware } = require('./utils');
+const { Parser } = require('json2csv');
+
+module.exports = (wallet, contract, provider, logger, redisClient) => {
+  router.get('/events', authMiddleware, async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+
+    const { page = 1, limit = 10, eventName, startTime, endTime, userAddress, exportCsv } = req.query;
+    const query = {};
+    if (eventName) query.eventName = eventName;
+    if (startTime || endTime) query.timestamp = {};
+    if (startTime) query.timestamp.$gte = new Date(parseInt(startTime));
+    if (endTime) query.timestamp.$lte = new Date(parseInt(endTime));
+    if (userAddress) query['data.userAddress'] = { $regex: userAddress, $options: 'i' }; // Adjust based on event args
+
+    const cacheKey = `events:${page}:${limit}:${eventName || 'all'}:${startTime || 'none'}:${endTime || 'none'}:${userAddress || 'none'}`;
+    try {
+      // Check Redis cache
+      const cached = await redisClient.get(cacheKey);
+      if (cached && !exportCsv) {
+        logger.info(`Cache hit for ${cacheKey}`);
+        return res.json(JSON.parse(cached));
+      }
+
+      // Fetch from MongoDB or blockchain
+      let events = await EventLog.find(query)
+        .skip((page - 1) * limit)
+        .limit(parseInt(limit))
+        .sort({ timestamp: -1 });
+      let total = await EventLog.countDocuments(query);
+
+      if (!events.length && !query.eventName) { // Fallback to blockchain if MongoDB is empty
+        const filter = contract.filters[eventName] ? contract.filters[eventName](userAddress || null) : null;
+        events = await contract.queryFilter(filter || '*', 0, 'latest');
+        events = events.map(event => ({
+          eventName: event.event,
+          blockNumber: event.blockNumber,
+          timestamp: new Date((await provider.getBlock(event.blockNumber)).timestamp * 1000),
+          data: event.args,
+          transactionHash: event.transactionHash,
+        })).filter(e => (!userAddress || JSON.stringify(e.data).includes(userAddress)) &&
+                       (!startTime || e.timestamp >= new Date(parseInt(startTime))) &&
+                       (!endTime || e.timestamp <= new Date(parseInt(endTime))))
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice((page - 1) * limit, page * limit);
+        total = events.length; // Approximate; refine with full count if needed
+      }
+
+      const response = { events, total };
+
+      if (exportCsv) {
+        const fields = ['eventName', 'blockNumber', 'timestamp', 'data', 'transactionHash'];
+        const csv = new Parser({ fields }).parse(events);
+        res.header('Content-Type', 'text/csv');
+        res.attachment('events.csv');
+        return res.send(csv);
+      }
+
+      // Cache for 5 minutes
+      await redisClient.setEx(cacheKey, 300, JSON.stringify(response));
+      res.json(response);
+    } catch (error) {
+      logger.error('Events fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch events' });
+    }
+  });
+
+  return router;
+};
