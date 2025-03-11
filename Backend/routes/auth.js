@@ -9,7 +9,7 @@ module.exports = (wallet, logger) => {
       const { address, signature } = req.body;
       const recovered = ethers.utils.verifyMessage('Telemedicine Login', signature);
       if (recovered !== address) throw new Error('Invalid signature');
-      const token = jwt.sign({ address }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ address }, config.auth.jwtSecret, { expiresIn: '1h' });
       res.json({ token });
     } catch (error) {
       logger.error('Login error:', error);
