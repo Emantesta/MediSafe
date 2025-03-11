@@ -1,0 +1,7 @@
+{
+  "userOps": [
+    { "_id": "1", "sender": "0x123...", "txHash": "0xabc...", "status": "submitted", "createdAt": "2025-03-11T10:00:00Z" },
+    { "_id": "2", "sender": "0x456...", "txHash": null, "status": "failed", "createdAt": "2025-03-11T09:00:00Z" }
+  ],
+  "total": 25 // Simulates 3 pages with limit=10
+}
