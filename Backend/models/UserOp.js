@@ -15,5 +15,7 @@ const UserOpSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'validated', 'submitted', 'failed'], default: 'pending' },
   createdAt: { type: Date, default: Date.now }
 });
+UserOpSchema.index({ txHash: 1 });
+UserOpSchema.index({ status: 1, createdAt: 1 });
 
 module.exports = mongoose.model('UserOp', UserOpSchema);
