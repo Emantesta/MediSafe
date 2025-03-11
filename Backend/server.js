@@ -100,6 +100,9 @@ wss.on('connection', (ws) => {
       logger.error('WebSocket error:', error);
     }
   });
+  // server.js
+wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userUpdate', data: { address, verificationStatus: 'verified' } })));
+  
   // Send alerts
   if (parseFloat(paymasterBalance) < 0.1) {
     wss.clients.forEach(client => client.send(JSON.stringify({ type: 'alert', data: 'Low paymaster balance' })));
