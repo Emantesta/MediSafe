@@ -73,5 +73,9 @@ const UserList = () => {
     </div>
   );
 };
+// UserList.js
+useEffect(() => {
+  subscribeToUpdates((data) => data.type === 'userUpdate' && refetch());
+}, [refetch]);
 
 export default UserList;
