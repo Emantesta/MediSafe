@@ -1,0 +1,3 @@
+UserOpSchema.index({ txHash: 1 });
+UserOpSchema.index({ sender: 1, createdAt: -1 });
+UserOpSchema.index({ status: 1 });
