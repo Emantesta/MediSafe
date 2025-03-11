@@ -66,6 +66,8 @@ const contract = new ethers.Contract(config.blockchain.contractAddress, [/* ABI 
 ], wallet);
 
 // Middleware
+app.use(express.static('frontend/dist'));
+app.get('*', (req, res) => res.sendFile('index.html', { root: 'frontend/dist' }));
 app.use(cors({ origin: process.env.FRONTEND_URL }));
 app.use(express.json());
 app.get('/health', (req, res) => {
