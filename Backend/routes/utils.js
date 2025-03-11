@@ -76,20 +76,11 @@ async function validateUserOp(userOp, contract, provider, logger) {
   }
 }
 
+const Semaphore = require('async-mutex').Semaphore;
+const semaphore = new Semaphore(config.performance.maxConcurrentUserOps);
+
 async function submitUserOperation(userOp, contract, provider, logger) {
-  const dbUserOp = new UserOp({ ...userOp, status: 'pending' });
-  await dbUserOp.save();
-
-  const isValid = await validateUserOp(userOp, contract, provider, logger);
-  if (!isValid) {
-    dbUserOp.status = 'failed';
-    await dbUserOp.save();
-    throw new Error('UserOp validation failed');
-  }
-
-  dbUserOp.status = 'validated';
-  await dbUserOp.save();
-
+  const [release] = await semaphore.acquire();
   try {
     const tx = await contract.executeUserOp(userOp);
     await tx.wait();
@@ -101,6 +92,8 @@ async function submitUserOperation(userOp, contract, provider, logger) {
     dbUserOp.status = 'failed';
     await dbUserOp.save();
     throw error;
+    } finally {
+    release();
   }
 }
 
