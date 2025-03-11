@@ -1,0 +1,19 @@
+{
+  "paymaster": {
+    "address": "0x1234567890abcdef1234567890abcdef12345678",
+    "balance": "0.5"
+  },
+  "trustedPaymasters": [
+    "0x1234567890abcdef1234567890abcdef12345678",
+    "0xabcdef1234567890abcdef1234567890abcdef12"
+  ],
+  "fundingHistory": [
+    {
+      "txHash": "0xabcdef1234567890abcdef1234567890abcdef12",
+      "amount": "1000000000000000000", // 1 ETH
+      "type": "deposit",
+      "timestamp": "2025-03-11T10:00:00Z",
+      "adminAddress": "0x9876543210fedcba9876543210fedcba98765432"
+    }
+  ]
+}
