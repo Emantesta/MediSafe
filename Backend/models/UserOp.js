@@ -12,7 +12,7 @@ const UserOpSchema = new mongoose.Schema({
   paymasterAndData: String,
   signature: { type: String, required: true },
   txHash: String,
-  status: { type: String, enum: ['pending', 'validated', 'submitted', 'failed'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'validated', 'submitted', 'failed' 'resolved'], default: 'pending' },
   createdAt: { type: Date, default: Date.now }
 });
 UserOpSchema.index({ txHash: 1 });
