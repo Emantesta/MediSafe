@@ -33,17 +33,14 @@ services:
     volumes:
       - ./:/app  # Mount for development; remove in production if not needed
     depends_on:
-      - mongo
-    command: npm start
-
-  mongo:
-    image: mongo:5.0
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
+      - redis
     environment:
-      - MONGO_INITDB_DATABASE=telemedicine
-
+      - REDIS_URL=redis://redis:6379
+  redis:
+    image: redis:6.2
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
 volumes:
-  mongo-data:
+  redis-data:
