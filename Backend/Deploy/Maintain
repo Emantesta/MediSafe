@@ -1,0 +1,31 @@
+Steps to Deploy and Maintain
+Setup Environment:
+Populate .env with your credentials and paths.
+
+Ensure SSL certificates are in place.
+
+Install Dependencies:
+Run npm install.
+
+Test Locally:
+Run npm run dev for development with nodemon.
+
+Run npm test to execute tests.
+
+Deploy:
+Use ./deploy.sh to deploy with Docker Compose.
+
+Configure Nginx if using a reverse proxy.
+
+Monitor and Maintain:
+Set up the cron job for monitor.sh.
+
+Regularly check error.log and update dependencies (npm update).
+
+Scaling Considerations:
+Use a load balancer (e.g., Nginx) for multiple instances.
+
+Configure MongoDB replica sets for high availability.
+
+Monitor IPFS node performance and consider a dedicated IPFS cluster.
+
