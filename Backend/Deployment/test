@@ -1,0 +1,8 @@
+Ensure .env is populated with all required variables.
+
+Run chmod +x deploy.sh if not already executable.
+
+Execute ./deploy.sh.
+
+Check logs with docker-compose logs app and verify the /health endpoint responds.
+
