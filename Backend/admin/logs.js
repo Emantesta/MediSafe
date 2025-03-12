@@ -20,26 +20,23 @@ module.exports = (wallet, contract, provider, logger, redisClient, wss) => {
         return res.json(JSON.parse(cached));
       }
 
-      // Aggregate logs from all files
-      const logs = [];
-      for (const file of logFiles) {
-        try {
-          const fileStream = require('fs').createReadStream(file);
-          const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
-
-          for await (const line of rl) {
-            const log = JSON.parse(line);
-            if (level && log.level !== level) continue;
-            if (startTime && new Date(log.timestamp) < new Date(parseInt(startTime))) continue;
-            if (endTime && new Date(log.timestamp) > new Date(parseInt(endTime))) continue;
-            if (keyword && !log.message.toLowerCase().includes(keyword.toLowerCase())) continue;
-            if (source && file !== source) continue;
-            logs.push({ ...log, source: file });
-          }
-        } catch (error) {
-          logger.warn(`Failed to read ${file}:`, error.message);
+      // Aggregate logs from all files in parallel
+      const logsPromises = logFiles.map(async file => {
+        const fileLogs = [];
+        const fileStream = require('fs').createReadStream(file);
+        const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+        for await (const line of rl) {
+          const log = JSON.parse(line);
+          if (level && log.level !== level) continue;
+          if (startTime && new Date(log.timestamp) < new Date(parseInt(startTime))) continue;
+          if (endTime && new Date(log.timestamp) > new Date(parseInt(endTime))) continue;
+          if (keyword && !log.message.toLowerCase().includes(keyword.toLowerCase())) continue;
+          if (source && file !== source) continue;
+          fileLogs.push({ ...log, source: file });
         }
-      }
+        return fileLogs;
+      });
+      const logs = (await Promise.all(logsPromises)).flat();
 
       const total = logs.length;
       const paginatedLogs = logs
@@ -62,5 +59,6 @@ module.exports = (wallet, contract, provider, logger, redisClient, wss) => {
     }
   });
 
+  // Other routes (e.g., /userops, /paymaster-status) remain unchanged
   return router;
 };
