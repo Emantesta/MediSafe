@@ -8,5 +8,7 @@ const ResourceUsageSchema = new mongoose.Schema({
   diskUsed: { type: Number }, // GB
   diskTotal: { type: Number }, // GB
 });
+// Add TTL index to expire documents after 7 days
+ResourceUsageSchema.index({ timestamp: 1 }, { expireAfterSeconds: 604800 }); // 7 days
 
 module.exports = mongoose.model('ResourceUsage', ResourceUsageSchema);
