@@ -186,6 +186,43 @@ contract.on('AppointmentStatusUpdated', async (appointmentId, status, event) => 
   );
 });
 
+contract.on('LabTestOrdered', async (testId, patient, lab, testType, orderedAt, event) => {
+  await new LabTest({
+    testId: testId.toNumber(),
+    patientAddress: patient,
+    labAddress: lab,
+    testType,
+    status: 'ordered',
+    orderedAt: new Date(orderedAt.toNumber() * 1000),
+    txHash: event.transactionHash,
+  }).save();
+  wss.clients.forEach(client => client.send(JSON.stringify({ type: 'labTestUpdate', data: { testId } })));
+});
+
+contract.on('LabTestCollected', async (testId, ipfsHash, event) => {
+  await LabTest.findOneAndUpdate(
+    { testId: testId.toNumber() },
+    { status: 'collected', ipfsHash, updatedAt: new Date(), txHash: event.transactionHash },
+    { new: true }
+  );
+});
+
+contract.on('LabTestUploaded', async (testId, ipfsHash, event) => {
+  await LabTest.findOneAndUpdate(
+    { testId: testId.toNumber() },
+    { status: 'uploaded', ipfsHash, updatedAt: new Date(), txHash: event.transactionHash },
+    { new: true }
+  );
+});
+
+contract.on('LabTestReviewed', async (testId, review, event) => {
+  await LabTest.findOneAndUpdate(
+    { testId: testId.toNumber() },
+    { status: 'reviewed', updatedAt: new Date(), txHash: event.transactionHash },
+    { new: true }
+  );
+});
+
 // Health Monitoring
 setInterval(async () => {
   const mongoStatus = mongoose.connection.readyState === 1 ? 'Up' : 'Down';
