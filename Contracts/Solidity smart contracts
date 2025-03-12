@@ -34,7 +34,7 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
     uint256 private constant VERIFICATION_TIMEOUT = 7 days;
     uint256 private constant DATA_MONETIZATION_REWARD = 10 * 10**18;
 
-    enum AppointmentStatus { Pending, Confirmed, Completed, Cancelled, Emergency }
+    enum AppointmentStatus { Pending, Confirmed, Completed, Cancelled, Rescheduled, Emergency }
     enum PaymentType { ETH, USDC, SONIC }
     enum LabTestStatus { Requested, Collected, ResultsUploaded, Reviewed }
     enum PrescriptionStatus { Generated, Verified, Fulfilled }
@@ -134,6 +134,8 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
     event DoctorVerified(address indexed doctor);
     event LabTechnicianVerified(address indexed labTech);
     event PharmacyRegistered(address indexed pharmacy);
+    event AppointmentBooked(uint256 indexed appointmentId, address patient, address doctor, uint256 timestamp, string videoCallLink),
+    event AppointmentStatusUpdated(uint256 indexed appointmentId, string status),
     event AppointmentBooked(uint256 indexed id, address indexed patient);
     event LabTestOrdered(uint256 indexed id, address indexed patient);
     event LabTestResultsUploaded(uint256 indexed id, string ipfsHash);
@@ -202,6 +204,9 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
         emit PatientRegistered(msg.sender);
     }
 
+    function getAppointment(uint256 appointmentId) view returns (address patient, address doctor, uint256 timestamp, string status, string videoCallLink),
+    function cancelAppointment(uint256 appointmentId),
+    function rescheduleAppointment(uint256 appointmentId, uint256 newTimestamp),
     function bookAppointment(
         address _doctor,
         uint48 _timestamp,
