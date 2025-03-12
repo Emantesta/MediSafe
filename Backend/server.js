@@ -97,6 +97,7 @@ app.use('/doctor', doctorRoutes(wallet, contract, logger));
 app.use('/lab', labRoutes(wallet, contract, logger));
 app.use('/pharmacy', pharmacyRoutes(wallet, contract, logger));
 app.use('/admin', require('./routes/admin')(wallet, contract, provider, logger, redisClient));
+app.use('/health', require('./routes/health')(provider, logger, redisClient, wss));
 
 // WebSocket Handling
 wss.on('connection', (ws) => {
