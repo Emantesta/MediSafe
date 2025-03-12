@@ -223,6 +223,43 @@ contract.on('LabTestReviewed', async (testId, review, event) => {
   );
 });
 
+contract.on('PrescriptionIssued', async (prescriptionId, patient, doctor, verificationCodeHash, details, issuedAt, event) => {
+  await new Prescription({
+    prescriptionId: prescriptionId.toNumber(),
+    patientAddress: patient,
+    doctorAddress: doctor,
+    verificationCodeHash,
+    status: 'issued',
+    issuedAt: new Date(issuedAt.toNumber() * 1000),
+    txHash: event.transactionHash,
+  }).save();
+  wss.clients.forEach(client => client.send(JSON.stringify({ type: 'prescriptionUpdate', data: { prescriptionId } })));
+});
+
+contract.on('PrescriptionVerified', async (prescriptionId, pharmacy, event) => {
+  await Prescription.findOneAndUpdate(
+    { prescriptionId: prescriptionId.toNumber() },
+    { status: 'verified', pharmacyAddress: pharmacy, updatedAt: new Date(), txHash: event.transactionHash },
+    { new: true }
+  );
+});
+
+contract.on('PrescriptionFulfilled', async (prescriptionId, event) => {
+  await Prescription.findOneAndUpdate(
+    { prescriptionId: prescriptionId.toNumber() },
+    { status: 'fulfilled', updatedAt: new Date(), txHash: event.transactionHash },
+    { new: true }
+  );
+});
+
+contract.on('PrescriptionRevoked', async (prescriptionId, event) => {
+  await Prescription.findOneAndUpdate(
+    { prescriptionId: prescriptionId.toNumber() },
+    { status: 'revoked', updatedAt: new Date(), txHash: event.transactionHash },
+    { new: true }
+  );
+});
+
 // Health Monitoring
 setInterval(async () => {
   const mongoStatus = mongoose.connection.readyState === 1 ? 'Up' : 'Down';
