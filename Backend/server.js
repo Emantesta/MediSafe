@@ -174,6 +174,26 @@ eventNames.forEach(eventName => {
       data: event.args,
       transactionHash: event.transactionHash,
     };
+  contract.on('AppointmentBooked', async (appointmentId, patient, doctor, timestamp, videoCallLink, event) => {
+  await new Appointment({
+    appointmentId: appointmentId.toNumber(),
+    patientAddress: patient,
+    doctorAddress: doctor,
+    timestamp: new Date(timestamp.toNumber() * 1000),
+    status: 'booked',
+    videoCallLink,
+    txHash: event.transactionHash,
+  }).save();
+  wss.clients.forEach(client => client.send(JSON.stringify({ type: 'appointmentUpdate', data: { appointmentId } })));
+});
+
+contract.on('AppointmentStatusUpdated', async (appointmentId, status, event) => {
+  await Appointment.findOneAndUpdate(
+    { appointmentId: appointmentId.toNumber() },
+    { status, txHash: event.transactionHash },
+    { new: true }
+  );
+});
 server.listen(process.env.PORT || 8080, () => logger.info(`Server running on port ${process.env.PORT || 8080}`));
 });
 
