@@ -137,8 +137,10 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
     event AppointmentBooked(uint256 indexed appointmentId, address patient, address doctor, uint256 timestamp, string videoCallLink),
     event AppointmentStatusUpdated(uint256 indexed appointmentId, string status),
     event AppointmentBooked(uint256 indexed id, address indexed patient);
-    event LabTestOrdered(uint256 indexed id, address indexed patient);
-    event LabTestResultsUploaded(uint256 indexed id, string ipfsHash);
+    event LabTestOrdered(uint256 indexed testId, address patient, address lab, string testType, uint48 orderedAt),
+    event LabTestCollected(uint256 indexed testId, string ipfsHash),
+    event LabTestUploaded(uint256 indexed testId, string ipfsHash),
+    event LabTestReviewed(uint256 indexed testId, string review),
     event PrescriptionGenerated(uint256 indexed id, address indexed patient);
     event PrescriptionVerified(uint256 indexed id, address indexed pharmacy);
     event PrescriptionFulfilled(uint256 indexed id, address indexed pharmacy);
@@ -331,7 +333,7 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
         emit LabTestOrdered(labTestCounter, _patient);
         _monetizeData(_patient);
     }
-
+    
     function reviewLabResults(uint256 _labTestId, string calldata _medicationDetails, string calldata _prescriptionIpfsHash) external onlyRole(DOCTOR_ROLE) {
         LabTestOrder storage order = labTestOrders[_labTestId];
         require(order.doctor == msg.sender, "Not your order");
@@ -455,7 +457,9 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
     function getLabTestDetails(uint256 _labTestId) external view returns (LabTestOrder memory) {
         return labTestOrders[_labTestId];
     }
-
+    function getLabTestDetails(uint256 testId) view returns (uint256, address patient, address lab, address doctor, uint8 status, string testType, string sampleIpfsHash, string resultsIpfsHash, uint48 orderedAt, uint48 updatedAt) {
+        return labTestOrders[_labTestId];
+    }
     function getPrescriptionDetails(uint256 _prescriptionId) external view returns (Prescription memory) {
         return prescriptions[_prescriptionId];
     }
