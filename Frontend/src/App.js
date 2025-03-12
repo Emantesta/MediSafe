@@ -91,6 +91,7 @@ const App = () => {
                 <Route path="/events" element={<ProtectedRoute><BlockchainEvents /></ProtectedRoute>} />
                 <Route path="/health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
                 <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
+                <Route path="/lab-tests" element={<ProtectedRoute><LabTests /></ProtectedRoute>} />
               </Routes>
             </Content>
           </Layout>
