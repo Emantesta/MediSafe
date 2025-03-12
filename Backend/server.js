@@ -8,6 +8,11 @@ const winston = require('winston');
 const cors = require('cors');
 const { ethers } = require('ethers');
 const redis = require('redis');
+const { WebSocketServer } = require('ws');
+const { Transport } = require('winston');
+const app = express();
+const server = require('http').createServer(app);
+const wss = new WebSocketServer({ server });
 const redisClient = redis.createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379',
 });
@@ -22,11 +27,18 @@ const pharmacyRoutes = require('./routes/pharmacy');
 // Setup Logger
 const logger = winston.createLogger({
   level: 'info',
-  format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+  format: winston.format.combine(  
+    winston.format.timestamp(), 
+    winston.format.json()),
   transports: [
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.Console()
-  ]
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }), // All levels
+    new winston.transports.File({ filename: 'access.log', level: 'info' }), // Example additional log
+    new winston.transports.Console(),
+    new WebSocketTransport(wss),
+  ],
 });
 
 const config = require('./config');
@@ -98,6 +110,9 @@ app.use('/lab', labRoutes(wallet, contract, logger));
 app.use('/pharmacy', pharmacyRoutes(wallet, contract, logger));
 app.use('/admin', require('./routes/admin')(wallet, contract, provider, logger, redisClient));
 app.use('/health', require('./routes/health')(provider, logger, redisClient, wss));
+app.use(express.json());
+app.use('/admin', require('./routes/admin')(wallet, contract, provider, logger, redisClient, wss));
+app.use('/health', require('./routes/health')(provider, logger, redisClient, wss));
 
 // WebSocket Handling
 wss.on('connection', (ws) => {
@@ -122,6 +137,16 @@ wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userUpdate', d
 wss.clients.forEach(client => client.send(JSON.stringify({ type: 'eventUpdate', data: eventLog })));
 wss.clients.forEach(client => client.send(JSON.stringify({ type: 'healthAlert', data: { message: 'MongoDB is down', timestamp: new Date() } })));
 wss.clients.forEach(client => client.send(JSON.stringify({ type: 'resourceUpdate', data: { cpu, memoryUsed, diskUsed } })));
+class WebSocketTransport extends Transport {
+  constructor(wss) {
+    super();
+    this.wss = wss;
+  }
+  log(info, callback) {
+    this.wss.clients.forEach(client => client.send(JSON.stringify({ type: 'logUpdate', data: info })));
+    callback();
+  }
+}
 setInterval(async () => {
   const mongoStatus = mongoose.connection.readyState === 1 ? 'Up' : 'Down';
   if (mongoStatus === 'Down') {
@@ -153,3 +178,5 @@ server.listen(process.env.PORT || 8080, () => logger.info(`Server running on por
 
 // Start Server
 server.listen(8080, () => logger.info('Server running on port 8080'));
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => logger.info(`Server running on port ${PORT}`));
