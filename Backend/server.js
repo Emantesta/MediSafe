@@ -120,6 +120,14 @@ redisClient.on('error', (err) => logger.error('Redis Client Error', err));
   // server.js
 wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userUpdate', data: { address, verificationStatus: 'verified' } })));
 wss.clients.forEach(client => client.send(JSON.stringify({ type: 'eventUpdate', data: eventLog })));
+wss.clients.forEach(client => client.send(JSON.stringify({ type: 'healthAlert', data: { message: 'MongoDB is down', timestamp: new Date() } })));
+setInterval(async () => {
+  const mongoStatus = mongoose.connection.readyState === 1 ? 'Up' : 'Down';
+  if (mongoStatus === 'Down') {
+    wss.clients.forEach(client => client.send(JSON.stringify({ type: 'healthAlert', data: { message: 'MongoDB is down', timestamp: new Date() } })));
+  }
+  // Add similar checks for other services
+}, 60000); // Check every minute
   
   // Send alerts
   if (parseFloat(paymasterBalance) < 0.1) {
