@@ -1,0 +1,9 @@
+{
+  "logs": [
+    { "level": "error", "timestamp": "2025-03-11T10:00:00Z", "message": "Database error", "source": "error.log" },
+    { "level": "info", "timestamp": "2025-03-11T10:01:00Z", "message": "Server started", "source": "combined.log" },
+    { "level": "info", "timestamp": "2025-03-11T10:02:00Z", "message": "Access granted", "source": "access.log" }
+  ],
+  "total": 3,
+  "sources": ["error.log", "combined.log", "access.log"]
+}
