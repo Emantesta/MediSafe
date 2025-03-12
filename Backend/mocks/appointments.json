@@ -1,0 +1,23 @@
+{
+  "appointments": [
+    {
+      "appointmentId": 1,
+      "patientAddress": "0x1234567890abcdef1234567890abcdef12345678",
+      "doctorAddress": "0xabcdef1234567890abcdef1234567890abcdef12",
+      "timestamp": "2025-03-11T10:00:00Z",
+      "status": "booked",
+      "videoCallLink": "https://zoom.us/j/123456789",
+      "txHash": "0xabcdef1234567890abcdef1234567890abcdef12"
+    },
+    {
+      "appointmentId": 2,
+      "patientAddress": "0x7890abcdef1234567890abcdef1234567890abcd",
+      "doctorAddress": "0x4567890abcdef1234567890abcdef1234567890",
+      "timestamp": "2025-03-11T11:00:00Z",
+      "status": "confirmed",
+      "videoCallLink": "https://zoom.us/j/987654321",
+      "txHash": "0x1234567890abcdef1234567890abcdef12345678"
+    }
+  ],
+  "total": 2
+}
