@@ -89,6 +89,7 @@ const App = () => {
                 <Route path="/paymaster" element={<ProtectedRoute><PaymasterManagement /></ProtectedRoute>} />
                 <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
                 <Route path="/events" element={<ProtectedRoute><BlockchainEvents /></ProtectedRoute>} />
+                <Route path="/health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
               </Routes>
             </Content>
           </Layout>
