@@ -11,8 +11,6 @@ const redis = require('redis');
 const redisClient = redis.createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379',
 });
-redisClient.on('error', (err) => logger.error('Redis Client Error', err));
-redisClient.connect().then(() => logger.info('Connected to Redis'));
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -84,6 +82,13 @@ app.get('/health', (req, res) => {
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => logger.info('Connected to MongoDB'))
   .catch(err => logger.error('MongoDB connection error:', err));
+redisClient.connect().then(() => logger.info('Connected to Redis'));
+await new EventLog(eventLog).save(); // Cache in MongoDB
+    wss.clients.forEach(client => client.send(JSON.stringify({ type: 'eventUpdate', data: eventLog })));
+    const keys = await redisClient.keys('events:*');
+    for (const key of keys) await redisClient.del(key); // Invalidate cache
+  });
+});
 
 // Route Middleware
 app.use('/auth', authRoutes(wallet, logger));
@@ -102,6 +107,7 @@ wss.on('connection', (ws) => {
         const appointments = await contract.getPatientAppointments(data.address);
         ws.send(JSON.stringify({ type: 'appointmentUpdate', data: appointments }));
       }
+redisClient.on('error', (err) => logger.error('Redis Client Error', err));
     } catch (error) {
       logger.error('WebSocket error:', error);
     }
@@ -118,7 +124,20 @@ wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userUpdate', d
     wss.clients.forEach(client => client.send(JSON.stringify({ type: 'paymasterUpdate', data: { balance: amount } })));
   }
 });
-  server.listen(process.env.PORT || 8080, () => logger.info(`Server running on port ${process.env.PORT || 8080}`));
+// At server startup
+const eventNames = ['AppointmentBooked', 'PrescriptionFulfilled']; // Add all relevant events
+eventNames.forEach(eventName => {
+  contract.on(eventName, async (...args) => {
+    const event = args[args.length - 1]; // Last arg is event object
+    const block = await provider.getBlock(event.blockNumber);
+    const eventLog = {
+      eventName,
+      blockNumber: event.blockNumber,
+      timestamp: new Date(block.timestamp * 1000),
+      data: event.args,
+      transactionHash: event.transactionHash,
+    };
+server.listen(process.env.PORT || 8080, () => logger.info(`Server running on port ${process.env.PORT || 8080}`));
 });
 
 // Start Server
