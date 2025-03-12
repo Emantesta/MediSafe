@@ -141,9 +141,10 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
     event LabTestCollected(uint256 indexed testId, string ipfsHash),
     event LabTestUploaded(uint256 indexed testId, string ipfsHash),
     event LabTestReviewed(uint256 indexed testId, string review),
-    event PrescriptionGenerated(uint256 indexed id, address indexed patient);
-    event PrescriptionVerified(uint256 indexed id, address indexed pharmacy);
-    event PrescriptionFulfilled(uint256 indexed id, address indexed pharmacy);
+    event PrescriptionIssued(uint256 indexed prescriptionId, address patient, address doctor, bytes32 verificationCodeHash, string details, uint48 issuedAt),
+    event PrescriptionVerified(uint256 indexed prescriptionId, address pharmacy),
+    event PrescriptionFulfilled(uint256 indexed prescriptionId),
+    event PrescriptionRevoked(uint256 indexed prescriptionId),
     event AISymptomAnalyzed(uint256 indexed id, address indexed patient);
     event VideoCallStarted(uint256 indexed appointmentId, string videoCallLink);
     event DataMonetizationOptIn(address indexed patient, bool enabled);
@@ -463,7 +464,9 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
     function getPrescriptionDetails(uint256 _prescriptionId) external view returns (Prescription memory) {
         return prescriptions[_prescriptionId];
     }
-
+    function revokePrescription(uint256 prescriptionId) {
+        return revokedprescriptions[_prescriptionId];
+    }
     function getAIAnalysisDetails(uint256 _aiAnalysisId) external view returns (AISymptomAnalysis memory) {
         return aiAnalyses[_aiAnalysisId];
     }
