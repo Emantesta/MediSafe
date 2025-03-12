@@ -118,6 +118,7 @@ redisClient.on('error', (err) => logger.error('Redis Client Error', err));
 });
   // server.js
 wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userUpdate', data: { address, verificationStatus: 'verified' } })));
+wss.clients.forEach(client => client.send(JSON.stringify({ type: 'eventUpdate', data: eventLog })));
   
   // Send alerts
   if (parseFloat(paymasterBalance) < 0.1) {
