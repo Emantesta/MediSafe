@@ -37,6 +37,7 @@ const logger = winston.createLogger({
     new winston.transports.File({ filename: 'combined.log' }), // All levels
     new winston.transports.File({ filename: 'access.log', level: 'info' }), // Example additional log
     new winston.transports.Console(),
+    new winston.transports.File({ filename: 'combined.log', maxsize: 5242880, maxFiles: 5 }), // 5MB, 5 files
     new WebSocketTransport(wss),
   ],
 });
