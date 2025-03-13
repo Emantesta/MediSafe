@@ -101,5 +101,12 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
     }
   });
 
+  router.post('/fund-paymaster', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin || req.user.role !== 'super_admin') {
+    return res.status(403).json({ error: 'Super admin access required' });
+  }
+  // Funding logic here
+});
+
   return router;
 };
