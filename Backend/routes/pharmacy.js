@@ -29,6 +29,13 @@ module.exports = (wallet, contract, logger) => {
       res.status(500).json({ error: 'Verification failed' });
     }
   });
+  
+  router.post('/fund-paymaster', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin || req.user.role !== 'super_admin') {
+    return res.status(403).json({ error: 'Super admin access required' });
+  }
+  // Funding logic here
+});
 
   router.post('/fulfill-prescription', authMiddleware, async (req, res) => {
     const { prescriptionId } = req.body;
