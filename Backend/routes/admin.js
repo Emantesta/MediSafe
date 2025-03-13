@@ -18,6 +18,16 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
         { sender: { $regex: search, $options: 'i' } },
       ];
     }
+  router.get('/userops', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+  const { page = 1, limit = 10 } = req.query;
+  const userOps = await UserOp.find()
+    .skip((page - 1) * limit)
+    .limit(parseInt(limit))
+    .sort({ createdAt: -1 });
+  const total = await UserOp.countDocuments();
+  res.json({ userOps, total });
+});
 
     const cacheKey = `userops:${page}:${limit}:${status || 'all'}:${search || 'none'}`;
     try {
