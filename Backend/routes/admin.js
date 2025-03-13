@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const { ethers } = require('ethers');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const UserOp = require('../models/UserOp');
 const { authMiddleware, submitUserOperation } = require('./utils');
+const authMiddleware = require('./utils').authMiddleware;
 const config = require('../config');
 
 // AuditLog Model (ideally moved to models/AuditLog.js)
