@@ -214,6 +214,7 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
     }
   });
 
+    // Action: Deactivate User
   router.post('/users/deactivate', authMiddleware, async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
     const { address } = req.body;
