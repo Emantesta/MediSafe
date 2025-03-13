@@ -88,6 +88,8 @@ const App = () => {
                 />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/userops" element={<UserOps />} />
+                <Route path="/users/:address" element={<UserDetails />} />
+                <Route path="/users" element={<UserList />} />
                 <Route path="/paymaster" element={<ProtectedRoute><PaymasterManagement /></ProtectedRoute>} />
                 <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
                 <Route path="/events" element={<ProtectedRoute><BlockchainEvents /></ProtectedRoute>} />
