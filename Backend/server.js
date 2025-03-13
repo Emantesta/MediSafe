@@ -138,9 +138,7 @@ wss.on('connection', (ws) => {
       if (data.type === 'appointment') {
         const appointments = await contract.getPatientAppointments(data.address);
         ws.send(JSON.stringify({ type: 'appointmentUpdate', data: appointments }));
-      },
        wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userOpUpdate', data: userOp })));
-      };
     } catch (error) {
       logger.error('WebSocket message error:', error);
     }
