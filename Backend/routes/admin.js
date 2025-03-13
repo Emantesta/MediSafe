@@ -28,7 +28,22 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
     }
   });
 
-  // UserOps Management
+  // Enhanced /userop-status/:txHash
+ router.get('/userop-status/:txHash', authMiddleware, async (req, res) => {
+   if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+   const { txHash } = req.params;
+
+   try {
+     const userOp = await UserOp.findOne({ txHash });
+     if (!userOp) return res.status(404).json({ error: 'UserOp not found' });
+     res.json({ status: userOp.status, userOp });
+   } catch (error) {
+     logger.error('UserOp status error:', error);
+     res.status(500).json({ error: 'Status check failed' });
+   }
+ });
+   
+   // UserOps Management
   router.get('/userops', authMiddleware, async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
 
