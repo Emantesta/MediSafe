@@ -9,6 +9,9 @@ const Dashboard = () => {
   const { data, isLoading } = useQuery('dashboard', () =>
     api.get('/admin/dashboard').then(res => res.data)
   );
+  const { data, isLoading } = useQuery('dashboard', () => api.get('/admin/dashboard').then(res => res.data), {
+  refetchInterval: 300000, // 5 minutes
+});
 
   const [alerts, setAlerts] = useState(data?.alerts || []);
 
