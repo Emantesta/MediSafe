@@ -102,10 +102,15 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
   });
 
   router.post('/fund-paymaster', authMiddleware, async (req, res) => {
-  if (!req.user.isAdmin || req.user.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Super admin access required' });
-  }
-  // Funding logic here
+  if (!req.user.isAdmin || req.user.role !== 'super_admin') return res.status(403).json({ error: 'Super admin access required' });
+  const { amount } = req.body;
+  const tx = await wallet.sendTransaction({ to: config.blockchain.paymasterAddress, value: ethers.utils.parseEther(amount) });
+  await new AuditLog({
+    adminAddress: req.user.address,
+    action: 'fund_paymaster',
+    details: `Funded ${amount} ETH to paymaster`
+  }).save();
+  res.json({ txHash: tx.hash });
 });
 
   return router;
