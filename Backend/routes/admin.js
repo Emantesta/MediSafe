@@ -4,6 +4,8 @@ const router = express.Router();
 const UserOp = require('../models/UserOp');
 const AuditLog = require('../models/AuditLog');
 const { authMiddleware, submitUserOperation } = require('./utils');
+const redis = require('redis');
+const client = redis.createClient();
 
 module.exports = (wallet, contract, provider, logger, redisClient) => {
   router.get('/userops', authMiddleware, async (req, res) => {
@@ -18,6 +20,15 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
         { sender: { $regex: search, $options: 'i' } },
       ];
     }
+
+  router.get('/appointments/:address', async (req, res) => {
+    const cacheKey = `appointments:${req.params.address}`;
+    const cached = await client.get(cacheKey);
+    if (cached) return res.json(JSON.parse(cached));
+    const appointments = await contract.getPatientAppointments(req.params.address);
+    await client.setEx(cacheKey, 3600, JSON.stringify({ appointments })); // Cache for 1 hour
+    res.json({ appointments });
+});
   router.get('/userops', authMiddleware, async (req, res) => {
   if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
   const { page = 1, limit = 10 } = req.query;
