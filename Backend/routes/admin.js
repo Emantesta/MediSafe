@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { ethers } = require('ethers');
+const FundingHistory = require('../models/FundingHistory');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const UserOp = require('../models/UserOp');
@@ -19,8 +20,20 @@ const AuditLogSchema = new mongoose.Schema({
 const AuditLog = mongoose.model('AuditLog', AuditLogSchema);
 
 module.exports = (wallet, contract, provider, logger, redisClient) => {
+     router.get('/paymaster-status', authMiddleware, async (req, res) => {
+     if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+
+     const cacheKey = 'paymaster_status';
+     try {
+      // Check Redis cache
+       const cached = await redisClient.get(cacheKey);
+       if (cached) {
+        logger.info('Cache hit for paymaster status');
+        return res.json(JSON.parse(cached));
+      }
+  
   // Audit Logs
-  router.get('/audit-logs', authMiddleware, async (req, res) => {
+    router.get('/audit-logs', authMiddleware, async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
     try {
       const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(100);
@@ -295,6 +308,44 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
   res.json({ message: 'User banned' });
 });
 
+  // Action: Update Trusted Paymasters
+  router.post('/paymaster/trusted', authMiddleware, async (req, res) => {
+    if (!req.user.isAdmin || req.user.role !== 'super_admin') return res.status(403).json({ error: 'Super admin access required' });
+    const { action, address } = req.body; // action: 'add' or 'remove'
+
+    try {
+      let callData;
+      if (action === 'add') callData = contract.interface.encodeFunctionData('addTrustedPaymaster', [address]);
+      else if (action === 'remove') callData = contract.interface.encodeFunctionData('removeTrustedPaymaster', [address]);
+      else return res.status(400).json({ error: 'Invalid action' });
+      const userOp = {
+        sender: wallet.address,
+        nonce: await contract.nonces(wallet.address),
+        callData,
+        callGasLimit: 200000,
+        verificationGasLimit: 100000,
+        preVerificationGas: 21000,
+        maxFeePerGas: ethers.utils.parseUnits('10', 'gwei').toString(),
+        maxPriorityFeePerGas: ethers.utils.parseUnits('1', 'gwei').toString(),
+        paymasterAndData: config.blockchain.paymasterAddress + '00',
+        signature: '0x', // Dummy; sign properly in production
+      };
+      const txHash = await submitUserOperation(userOp, contract, provider, logger);
+
+      await new AuditLog({
+        adminAddress: req.user.address,
+        action: `${action}_trusted_paymaster`,
+        details: `${action === 'add' ? 'Added' : 'Removed'} ${address} as trusted paymaster, txHash: ${txHash}`,
+      }).save();
+
+      await redisClient.del('paymaster_status');
+      res.json({ txHash });
+    } catch (error) {
+      logger.error('Update trusted paymasters error:', error);
+      res.status(500).json({ error: 'Update failed' });
+    }
+  });
+       
   // Paymaster Management
   router.post('/fund-paymaster', authMiddleware, async (req, res) => {
     if (!req.user.isAdmin || req.user.role !== 'super_admin') {
@@ -307,16 +358,43 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
         to: config.blockchain.paymasterAddress,
         value: ethers.utils.parseEther(amount),
       });
+      // Invalidate cache
+      await redisClient.del('paymaster_status');
+      wss.clients.forEach(client => client.send(JSON.stringify({ type: 'paymasterUpdate', data: { balance: amount } })));
       await new AuditLog({
         adminAddress: req.user.address,
         action: 'fund_paymaster',
-        details: `Funded ${amount} ETH to paymaster`,
+        details: `Added ${amount} ETH to paymaster, txHash: ${receipt.transactionHash}`,
       }).save();
       res.json({ txHash: tx.hash });
     } catch (error) {
       logger.error('Fund paymaster error:', error);
       res.status(500).json({ error: 'Funding failed' });
     }
+  });
+
+   // Fetch current paymaster and balance
+      const paymasterAddress = config.blockchain.paymasterAddress; // Or await contract.paymaster() if dynamic
+      const paymasterContract = new ethers.Contract(paymasterAddress, ['function getBalance() view returns (uint256)'], provider);
+      const balance = ethers.utils.formatEther(await paymasterContract.getBalance());
+      // Fetch trusted paymasters (assumes contract function exists)
+      const trustedPaymasters = await contract.trustedPaymasters().catch(() => [paymasterAddress]); // Fallback to current if not implemented
+
+      // Fetch funding history
+      const fundingHistory = await FundingHistory.find().sort({ timestamp: -1 }).limit(50);
+
+      const response = {
+        paymaster: { address: paymasterAddress, balance },
+        trustedPaymasters,
+        fundingHistory,
+      };
+         // Cache for 1 minute
+        await redisClient.setEx(cacheKey, 60, JSON.stringify(response));
+        res.json(response);
+     }  catch (error) {
+        logger.error('Paymaster status fetch error:', error);
+        res.status(500).json({ error: 'Failed to fetch paymaster status' });
+     } 
   });
 
   return router;
