@@ -7,6 +7,7 @@ const UserOp = require('../models/UserOp');
 const FundingHistory = require('../models/FundingHistory');
 const AuditLog = require('../models/AuditLog');
 const EventLog = require('../models/EventLog');
+const ResourceUsage = require('../models/ResourceUsage');
 const { authMiddleware, submitUserOperation } = require('./utils');
 const config = require('../config');
 const { Parser } = require('json2csv');
@@ -460,6 +461,20 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
       res.status(500).json({ error: 'Failed to fetch events' });
     }
   });
+
+  //Resourceusage
+const ResourceUsage = require('../models/ResourceUsage');
+
+router.get('/resource-usage', authMiddleware, async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+  try {
+    const usage = await ResourceUsage.find().sort({ timestamp: -1 }).limit(50);
+    res.json({ usage });
+  } catch (error) {
+    logger.error('Resource usage fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch resource usage' });
+  }
+});
 
   return router;
 };
