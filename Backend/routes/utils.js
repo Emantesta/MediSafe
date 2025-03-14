@@ -92,6 +92,8 @@ async function submitUserOperation(userOp, contract, provider, logger) {
   } catch (error) {
     dbUserOp.status = 'failed';
     await dbUserOp.save();
+    notifyUpdate(dbUserOp); // Add this after status updates
+    return txHash;
     throw error;
     } finally {
     release();
