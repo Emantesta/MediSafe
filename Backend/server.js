@@ -141,6 +141,7 @@ wss.on('connection', (ws) => {
         wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userOpUpdate', data: userOp })));
         wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userUpdate', data: { address, verificationStatus: 'verified' } })));
      if (parseFloat(paymasterBalance) < 0.1) {
+        wss.clients.forEach(client => client.send(JSON.stringify({ type: 'paymasterUpdate', data: { balance: amount } })));
         wss.clients.forEach(client => client.send(JSON.stringify({ type: 'alert', data: 'Low paymaster balance' })));
         const notifyUpdate = (userOp) => wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userOpUpdate', data: userOp })));
     }
