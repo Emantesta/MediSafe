@@ -16,6 +16,8 @@ const UserOpSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 UserOpSchema.index({ txHash: 1 });
+UserOpSchema.index({ sender: 1, createdAt: -1 });
+UserOpSchema.index({ status: 1 });
 UserOpSchema.index({ status: 1, createdAt: 1 });
 
 module.exports = mongoose.model('UserOp', UserOpSchema);
