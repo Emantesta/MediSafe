@@ -4,6 +4,7 @@ const { ethers } = require('ethers');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const UserOp = require('../models/UserOp');
+const AuditLog = require('../models/AuditLog');
 const { authMiddleware, submitUserOperation } = require('./utils');
 const authMiddleware = require('./utils').authMiddleware;
 const config = require('../config');
