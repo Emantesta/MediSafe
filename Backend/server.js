@@ -8,8 +8,8 @@ const winston = require('winston');
 const cors = require('cors');
 const { ethers } = require('ethers');
 const redis = require('redis');
-const Appointment = require('./models/Appointment'); // Assuming this exists from previous design
-const EventLog = require('./models/EventLog'); // Assuming this exists from previous design
+const Appointment = require('./models/Appointment'); // 
+const EventLog = require('./models/EventLog'); // 
 
 // Initialize Express and Server
 const app = express();
@@ -138,10 +138,11 @@ wss.on('connection', (ws) => {
       if (data.type === 'appointment') {
         const appointments = await contract.getPatientAppointments(data.address);
         ws.send(JSON.stringify({ type: 'appointmentUpdate', data: appointments }));
-       wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userOpUpdate', data: userOp })));
-       wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userUpdate', data: { address, verificationStatus: 'verified' } })));
+        wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userOpUpdate', data: userOp })));
+        wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userUpdate', data: { address, verificationStatus: 'verified' } })));
      if (parseFloat(paymasterBalance) < 0.1) {
-       wss.clients.forEach(client => client.send(JSON.stringify({ type: 'alert', data: 'Low paymaster balance' })));
+        wss.clients.forEach(client => client.send(JSON.stringify({ type: 'alert', data: 'Low paymaster balance' })));
+        const notifyUpdate = (userOp) => wss.clients.forEach(client => client.send(JSON.stringify({ type: 'userOpUpdate', data: userOp })));
     }
     } catch (error) {
       logger.error('WebSocket message error:', error);
