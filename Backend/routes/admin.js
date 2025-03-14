@@ -61,6 +61,7 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
 
     const cacheKey = `userops:${page}:${limit}:${status || 'all'}:${search || 'none'}`;
     try {
+      const cached = await client.get(`userops:${page}:${status}:${search}`);
       const cached = await redisClient.get(cacheKey);
       if (cached) {
         logger.info(`Cache hit for ${cacheKey}`);
@@ -74,6 +75,7 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
       const total = await UserOp.countDocuments(query);
 
       const response = { userOps, total };
+      await client.setEx(`userops:${page}:${status}:${search}`, 300, JSON.stringify({ userOps, total }));
       await redisClient.setEx(cacheKey, 300, JSON.stringify(response));
       logger.info(`Cache set for ${cacheKey}`);
 
