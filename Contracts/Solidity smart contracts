@@ -134,23 +134,25 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
     event DoctorVerified(address indexed doctor);
     event LabTechnicianVerified(address indexed labTech);
     event PharmacyRegistered(address indexed pharmacy);
-    event AppointmentBooked(uint256 indexed appointmentId, address patient, address doctor, uint256 timestamp, string videoCallLink),
-    event AppointmentStatusUpdated(uint256 indexed appointmentId, string status),
+    event AppointmentBooked(uint256 indexed appointmentId, address patient, address doctor, uint256 timestamp, string videoCallLink);
+    event AppointmentStatusUpdated(uint256 indexed appointmentId, string status);
     event AppointmentBooked(uint256 indexed id, address indexed patient);
-    event LabTestOrdered(uint256 indexed testId, address patient, address lab, string testType, uint48 orderedAt),
-    event LabTestCollected(uint256 indexed testId, string ipfsHash),
-    event LabTestUploaded(uint256 indexed testId, string ipfsHash),
-    event LabTestReviewed(uint256 indexed testId, string review),
-    event PrescriptionIssued(uint256 indexed prescriptionId, address patient, address doctor, bytes32 verificationCodeHash, string details, uint48 issuedAt),
-    event PrescriptionVerified(uint256 indexed prescriptionId, address pharmacy),
-    event PrescriptionFulfilled(uint256 indexed prescriptionId),
-    event PrescriptionRevoked(uint256 indexed prescriptionId),
+    event LabTestOrdered(uint256 indexed testId, address patient, address lab, string testType, uint48 orderedAt);
+    event LabTestCollected(uint256 indexed testId, string ipfsHash);
+    event LabTestUploaded(uint256 indexed testId, string ipfsHash);
+    event LabTestReviewed(uint256 indexed testId, string review);
+    event PrescriptionIssued(uint256 indexed prescriptionId, address patient, address doctor, bytes32 verificationCodeHash, string details, uint48 issuedAt);
+    event PrescriptionVerified(uint256 indexed prescriptionId, address pharmacy);
+    event PrescriptionFulfilled(uint256 indexed prescriptionId);
+    event PrescriptionRevoked(uint256 indexed prescriptionId);
     event AISymptomAnalyzed(uint256 indexed id, address indexed patient);
     event VideoCallStarted(uint256 indexed appointmentId, string videoCallLink);
     event DataMonetizationOptIn(address indexed patient, bool enabled);
     event DataRewardClaimed(address indexed patient, uint256 amount);
     event PaymasterUpdated(address indexed oldPaymaster, address indexed newPaymaster);
     event UserOperationExecuted(address indexed sender, uint256 nonce, bytes32 hash);
+    event TrustedPaymasterAdded(address indexed paymaster);
+    event TrustedPaymasterRemoved(address indexed paymaster);
 
     function initialize(
         address _usdcToken,
@@ -207,9 +209,6 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
         emit PatientRegistered(msg.sender);
     }
 
-    function getAppointment(uint256 appointmentId) view returns (address patient, address doctor, uint256 timestamp, string status, string videoCallLink),
-    function cancelAppointment(uint256 appointmentId),
-    function rescheduleAppointment(uint256 appointmentId, uint256 newTimestamp),
     function bookAppointment(
         address _doctor,
         uint48 _timestamp,
@@ -316,6 +315,21 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
         trustedPaymasters[_newPaymaster] = true;
         trustedPaymasters[oldPaymaster] = false;
         emit PaymasterUpdated(oldPaymaster, _newPaymaster);
+    }
+
+    function addTrustedPaymaster(address _paymaster) external onlyRole(ADMIN_ROLE) {
+        require(_paymaster != address(0), "Invalid paymaster address");
+        require(!trustedPaymasters[_paymaster], "Paymaster already trusted");
+        trustedPaymasters[_paymaster] = true;
+        emit TrustedPaymasterAdded(_paymaster);
+    }
+
+    function removeTrustedPaymaster(address _paymaster) external onlyRole(ADMIN_ROLE) {
+        require(_paymaster != address(0), "Invalid paymaster address");
+        require(trustedPaymasters[_paymaster], "Paymaster not trusted");
+        require(_paymaster != paymaster, "Cannot remove primary paymaster");
+        trustedPaymasters[_paymaster] = false;
+        emit TrustedPaymasterRemoved(_paymaster);
     }
 
     // Doctor Functions
@@ -458,15 +472,11 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
     function getLabTestDetails(uint256 _labTestId) external view returns (LabTestOrder memory) {
         return labTestOrders[_labTestId];
     }
-    function getLabTestDetails(uint256 testId) view returns (uint256, address patient, address lab, address doctor, uint8 status, string testType, string sampleIpfsHash, string resultsIpfsHash, uint48 orderedAt, uint48 updatedAt) {
-        return labTestOrders[_labTestId];
-    }
+
     function getPrescriptionDetails(uint256 _prescriptionId) external view returns (Prescription memory) {
         return prescriptions[_prescriptionId];
     }
-    function revokePrescription(uint256 prescriptionId) {
-        return revokedprescriptions[_prescriptionId];
-    }
+
     function getAIAnalysisDetails(uint256 _aiAnalysisId) external view returns (AISymptomAnalysis memory) {
         return aiAnalyses[_aiAnalysisId];
     }
@@ -475,4 +485,4 @@ contract TelemedicineSystem is Initializable, AccessControlUpgradeable, Reentran
         Patient memory patient = patients[_patient];
         return (patient.dataSharing, patient.lastRewardTimestamp);
     }
-}                                                                                                                                              
+}
