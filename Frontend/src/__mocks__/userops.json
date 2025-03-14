@@ -1,0 +1,28 @@
+{
+  "userOps": [
+    {
+      "_id": "1",
+      "sender": "0x1234567890abcdef1234567890abcdef12345678",
+      "txHash": "0xabcdef1234567890abcdef1234567890abcdef12",
+      "status": "submitted",
+      "createdAt": "2025-03-11T10:00:00Z",
+      "nonce": 1,
+      "callData": "0x...",
+      "callGasLimit": 200000,
+      "verificationGasLimit": 100000,
+      "preVerificationGas": 21000,
+      "maxFeePerGas": "10000000000",
+      "maxPriorityFeePerGas": "1000000000",
+      "paymasterAndData": "0x...",
+      "signature": "0x..."
+    },
+    {
+      "_id": "2",
+      "sender": "0x9876543210fedcba9876543210fedcba98765432",
+      "txHash": null,
+      "status": "failed",
+      "createdAt": "2025-03-11T09:00:00Z"
+    }
+  ],
+  "total": 2
+}
