@@ -7,3 +7,12 @@
   "total": 3,
   "sources": ["error.log", "combined.log", "access.log"]
 }
+
+{
+  "logs": [
+    { "level": "info", "timestamp": "2025-03-11T10:00:00Z", "message": "Server started" },
+    { "level": "error", "timestamp": "2025-03-11T10:01:00Z", "message": "Database connection failed" },
+    { "level": "warn", "timestamp": "2025-03-11T10:02:00Z", "message": "High latency detected" }
+  ],
+  "total": 3
+}
