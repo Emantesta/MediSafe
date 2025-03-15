@@ -38,6 +38,7 @@ class WebSocketTransport extends winston.Transport {
     callback();
   }
 }
+logger.add(new WebSocketTransport(wss));
 
 // Setup Logger
 const logger = winston.createLogger({
