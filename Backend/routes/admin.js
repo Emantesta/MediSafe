@@ -93,7 +93,7 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
         paymasterAndData: config.blockchain.paymasterAddress + '00',
         signature: '0x',
       };
-      const txHash = await submitUserOperation(userOp, contract, provider, logger);
+      const txHash = await submitUserOperation(userOp, contract, provider, logger, wss);
 
       await new AuditLog({
         adminAddress: req.user.address,
@@ -327,7 +327,7 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
         paymasterAndData: config.blockchain.paymasterAddress + '00',
         signature: '0x',
       };
-      const txHash = await submitUserOperation(userOp, contract, provider, logger);
+      const txHash = await submitUserOperation(userOp, contract, provider, logger, wss);
 
       await User.updateOne({ address }, { verificationStatus: 'verified' });
       await new AuditLog({
