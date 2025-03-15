@@ -12,8 +12,9 @@ const { ethers } = require('ethers');
 const redis = require('redis');
 const Appointment = require('./models/Appointment');
 const EventLog = require('./models/EventLog');
-const LabTest = require('./models/LabTest'); // Assuming LabTest model exists
-const Prescription = require('./models/Prescription'); // Assuming Prescription model exists
+const LabTest = require('./models/LabTest'); 
+const Prescription = require('./models/Prescription');
+const { Transport } = require('winston');
 const config = require('./config');
 
 // Initialize Express and Server
