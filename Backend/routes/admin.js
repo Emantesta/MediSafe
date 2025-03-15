@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { ethers } = require('ethers');
 const mongoose = require('mongoose');
+const fs = require('fs').promises;
+const readline = require('readline');
 const User = require('../models/User');
 const UserOp = require('../models/UserOp');
 const FundingHistory = require('../models/FundingHistory');
@@ -16,7 +18,7 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
   // Middleware for all routes
   router.use(authMiddleware);
 
-  // Paymaster Status
+  // Paymaster Management
   router.get('/paymaster-status', async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
     
@@ -43,7 +45,6 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
     }
   });
 
-  // Fund Paymaster
   router.post('/fund-paymaster', async (req, res) => {
     if (!req.user.isAdmin || req.user.role !== 'super_admin') {
       return res.status(403).json({ error: 'Super admin access required' });
@@ -68,7 +69,6 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
     }
   });
 
-  // Update Trusted Paymasters
   router.post('/paymaster/trusted', async (req, res) => {
     if (!req.user.isAdmin || req.user.role !== 'super_admin') {
       return res.status(403).json({ error: 'Super admin access required' });
@@ -120,7 +120,7 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
     }
   });
 
-  // UserOp Status
+  // UserOp Management
   router.get('/userop-status/:txHash', async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
     const { txHash } = req.params;
@@ -135,7 +135,6 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
     }
   });
 
-  // UserOps Management
   router.get('/userops', async (req, res) => {
     if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
     
@@ -154,7 +153,7 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
       const cached = await redisClient.get(cacheKey);
       if (cached) {
         logger.info(`Cache hit for ${cacheKey}`);
-        return res.json(JSON.parse(cached));
+        return res.json(JSON.decode(cached));
       }
 
       const userOps = await UserOp.find(query)
@@ -462,17 +461,65 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
     }
   });
 
-  //Resourceusage
-router.get('/resource-usage', authMiddleware, async (req, res) => {
-  if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
-  try {
-    const usage = await ResourceUsage.find().sort({ timestamp: -1 }).limit(50);
-    res.json({ usage });
-  } catch (error) {
-    logger.error('Resource usage fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch resource usage' });
-  }
-});
+  // Resource Usage
+  router.get('/resource-usage', async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+    try {
+      const usage = await ResourceUsage.find().sort({ timestamp: -1 }).limit(50);
+      res.json({ usage });
+    } catch (error) {
+      logger.error('Resource usage fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch resource usage' });
+    }
+  });
+
+  // Logs Management
+  router.get('/logs', async (req, res) => {
+    if (!req.user.isAdmin) return res.status(403).json({ error: 'Admin access required' });
+
+    const { page = 1, limit = 10, level, startTime, endTime, keyword, download } = req.query;
+    const cacheKey = `logs:${page}:${limit}:${level || 'all'}:${startTime || 'none'}:${endTime || 'none'}:${keyword || 'none'}`;
+
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached && !download) {
+        logger.info(`Cache hit for ${cacheKey}`);
+        return res.json(JSON.parse(cached));
+      }
+
+      const logs = [];
+      const fileStream = require('fs').createReadStream('logs/combined.log');
+      const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+      for await (const line of rl) {
+        const log = JSON.parse(line);
+        if (level && log.level !== level) continue;
+        if (startTime && new Date(log.timestamp) < new Date(parseInt(startTime))) continue;
+        if (endTime && new Date(log.timestamp) > new Date(parseInt(endTime))) continue;
+        if (keyword && !log.message.toLowerCase().includes(keyword.toLowerCase())) continue;
+        logs.push(log);
+      }
+
+      const total = logs.length;
+      const paginatedLogs = logs
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice((page - 1) * limit, page * limit);
+
+      if (download) {
+        const logText = logs.map(log => `${log.timestamp} [${log.level}] ${log.message}`).join('\n');
+        res.header('Content-Type', 'text/plain');
+        res.attachment('logs.txt');
+        return res.send(logText);
+      }
+
+      const response = { logs: paginatedLogs, total };
+      await redisClient.setEx(cacheKey, 300, JSON.stringify(response));
+      res.json(response);
+    } catch (error) {
+      logger.error('Log fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch logs' });
+    }
+  });
 
   return router;
 };
