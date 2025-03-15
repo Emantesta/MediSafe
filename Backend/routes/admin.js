@@ -14,7 +14,7 @@ const { authMiddleware, submitUserOperation } = require('./utils');
 const config = require('../config');
 const { Parser } = require('json2csv');
 
-module.exports = (wallet, contract, provider, logger, redisClient) => {
+module.exports = (wallet, contract, provider, logger, redisClient, wss) => {
   // Middleware for all routes
   router.use(authMiddleware);
 
