@@ -182,7 +182,7 @@ module.exports = (wallet, contract, provider, logger, redisClient) => {
         return res.status(400).json({ error: 'Invalid UserOp or not failed' });
       }
 
-      const txHash = await submitUserOperation(userOp.toObject(), contract, provider, logger);
+      const txHash = await submitUserOperation(userOp.toObject(), contract, provider, logger, wss);
       await new AuditLog({
         adminAddress: req.user.address,
         action: 'retry_userop',
