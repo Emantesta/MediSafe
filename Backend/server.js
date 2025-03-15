@@ -4,6 +4,7 @@ const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const { WebSocketServer } = require('ws');
+const ResourceUsage = require('../models/ResourceUsage');
 const mongoose = require('mongoose');
 const winston = require('winston');
 const cors = require('cors');
